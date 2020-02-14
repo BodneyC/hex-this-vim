@@ -1,16 +1,30 @@
 let s:hl = { 'h': -1, 'l': 1 }
+let s:wb = { 'b': 'h', 'w': 'l' }
 let s:jk = { 'j': 1, 'k': -1 }
-let s:chunk = { 'w': 1, 'W': 1, 'e': 1, 'E': 1,
-      \ 'b': -1, 'B': -1, 'ge': -1, 'gE': -1 }
+let s:chunk = { 'W': 1, 'e': 1, 'E': 1,
+      \ 'B': -1, 'ge': -1, 'gE': -1 }
 
 """"""" Util functions
 
-function! s:align_hl_groups()
+function! vim_hex_this#move#align_hl_groups()
   let l:x = getpos('.')[2] - b:vht_move.hex_start
   let l:x -= (l:x / ((b:vht_disp.bytes * 2) + 1)) + 1
   if l:x == -1 | let l:x = 0 | endif
-  let l:x = (l:x / 2) + (l:x % 2) + b:vht_move.ascii_start
-  exec 'match HexThisAsciiEq /\%' . line('.') . 'l\%' . l:x . 'c/'
+  let l:x = (l:x / 2) + (l:x % 2)
+
+	let b:byte_inf = {
+				\ 'line': line('.'),
+				\ 'nth': l:x,
+				\ 'ascii_off': l:x + b:vht_move.ascii_start,
+				\ 'hex_off': b:vht_move.hex_start + (l:x * 2) + (l:x / b:vht_disp.bytes)}
+
+	let l:hex_patt = '\%' . line('.') . 'l\%>' . (b:byte_inf.hex_off - 1) 
+				\ . 'c\%<' . (b:byte_inf.hex_off + 2) . 'c'
+	let l:ascii_patt = '\%' . line('.') . 'l\%' . b:byte_inf.ascii_off . 'c'
+
+	match none
+  exec 'match HexThisAsciiEq /' . l:ascii_patt . '/'
+  exec '2match HexThisHexEq /' . l:hex_patt . '/'
 endfunction
 
 function! s:out_of_bounds()
@@ -28,7 +42,7 @@ endfunction
 
 function! vim_hex_this#move#chunk(dir)
   if index(keys(s:chunk), a:dir) == -1
-    throw '[VHT] Called <SID>chunk with arg not (ge|gE|[wWbBeE])'
+    throw '[VHT] Called <SID>chunk with arg not (g[eE]|[wWbBeE])'
   endif
 
   exec 'normal! ' . a:dir
@@ -93,23 +107,29 @@ function! vim_hex_this#move#hl(dir)
   call vim_hex_this#move#curmove(l:pos)
 endfunction
 
+function! vim_hex_this#move#wb(dir)
+  if index(keys(s:wb), a:dir) == -1
+    throw '[VHT] Called <SID>wb with arg not [wb]'
+  endif
+	call vim_hex_this#move#hl(s:wb[a:dir])
+	call vim_hex_this#move#hl(s:wb[a:dir])
+endfunction
+
 function! vim_hex_this#move#jk(dir)
   if index(keys(s:jk), a:dir) == -1
     throw '[VHT] Called <SID>jk with arg not [jk]'
   endif
-
   let l:pos = <SID>out_of_bounds()
-
-  if !((l:pos[1] == 1 && a:dir == 'k') || (l:pos[1] == line('$') && a:dir == 'j'))
+  if !((l:pos[1] == 1 && a:dir == 'k') 
+				\ || (l:pos[1] == line('$') && a:dir == 'j'))
     let l:pos[1] += s:jk[a:dir]
   endif
-
   call vim_hex_this#move#curmove(l:pos)
 endfunction
 
 function! vim_hex_this#move#rst(...)
 	if exists('a:000')
-		exec 'normal! ' . join(a:0, ' ')
+		exec 'normal! ' . join(a:000, ' ')
 	endif
   call vim_hex_this#move#curmove(<SID>out_of_bounds())
 endfunction
@@ -124,12 +144,16 @@ function! vim_hex_this#move#eol()
         \ [bufnr(), line('.'), b:vht_move.hex_end, 0])
 endfunction
 
+function! vim_hex_this#move#inbound()
+	call vim_hex_this#move#curmove(<SID>out_of_bounds())
+endfunction
+
 """"""" Display functions
 
 function! vim_hex_this#move#curmove(pos)
   " echo a:pos
   call setpos('.', a:pos)
-  call <SID>align_hl_groups()
+  call vim_hex_this#move#align_hl_groups()
 endfunction
 
 " vim: noet ts=2 sw=2 tw=110
