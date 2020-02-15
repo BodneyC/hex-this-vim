@@ -49,7 +49,7 @@ endfunction
 function! hex_this#edit#input_ascii()
   let l:cur_byte = hex_this#edit#hex2ascii(<SID>byte_under_cursor())
   echo '(' . l:cur_byte . ') Input ASCII char: '
-  return hex_this#edit#ascii2hex(getchar())
+  return hex_this#edit#ascii2hex(nr2char(getchar()))
 endfunction
 
 function! hex_this#edit#input_dec()
@@ -118,6 +118,7 @@ function! hex_this#edit#change_one(...) abort
 
   let l:Finput = function('hex_this#edit#input_' . l:inp_fmt)
   let l:inp = l:Finput()
+  echom l:inp
   call <SID>clear_cmd_line()
 
   let l:pos = getpos('.')
