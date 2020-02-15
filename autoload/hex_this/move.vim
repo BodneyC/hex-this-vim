@@ -6,17 +6,17 @@ let s:chunk = { 'W': 1, 'e': 1, 'E': 1,
 
 """"""" Util functions
 
-function! vim_hex_this#move#align_hl_groups()
-  let l:x = getpos('.')[2] - b:vht_move.hex_start
-  let l:x -= (l:x / ((b:vht_disp.bytes * 2) + 1)) + 1
+function! hex_this#move#align_hl_groups()
+  let l:x = getpos('.')[2] - b:ht_move.hex_start
+  let l:x -= (l:x / ((b:ht_disp.bytes * 2) + 1)) + 1
   if l:x == -1 | let l:x = 0 | endif
   let l:x = (l:x / 2) + (l:x % 2)
 
 	let b:byte_inf = {
 				\ 'line': line('.'),
 				\ 'nth': l:x,
-				\ 'ascii_off': l:x + b:vht_move.ascii_start,
-				\ 'hex_off': b:vht_move.hex_start + (l:x * 2) + (l:x / b:vht_disp.bytes)}
+				\ 'ascii_off': l:x + b:ht_move.ascii_start,
+				\ 'hex_off': b:ht_move.hex_start + (l:x * 2) + (l:x / b:ht_disp.bytes)}
 
 	let l:hex_patt = '\%' . line('.') . 'l\%>' . (b:byte_inf.hex_off - 1) 
 				\ . 'c\%<' . (b:byte_inf.hex_off + 2) . 'c'
@@ -29,18 +29,18 @@ endfunction
 
 function! s:out_of_bounds()
   let l:pos = getpos('.')
-  if l:pos[2] < b:vht_move.hex_start
-    let l:pos[2] = b:vht_move.hex_start
+  if l:pos[2] < b:ht_move.hex_start
+    let l:pos[2] = b:ht_move.hex_start
   endif
-  if l:pos[2] > b:vht_move.hex_end
-    let l:pos[2] = b:vht_move.hex_end
+  if l:pos[2] > b:ht_move.hex_end
+    let l:pos[2] = b:ht_move.hex_end
   endif
   return l:pos
 endfunction
 
 """"""" Movement functions
 
-function! vim_hex_this#move#chunk(dir)
+function! hex_this#move#chunk(dir)
   if index(keys(s:chunk), a:dir) == -1
     throw '[VHT] Called <SID>chunk with arg not (g[eE]|[wWbBeE])'
   endif
@@ -52,9 +52,9 @@ function! vim_hex_this#move#chunk(dir)
   if l:pos != getpos('.')
     let l:pos[1] += s:chunk[a:dir]
     if s:chunk[a:dir] == 1
-      let l:pos[2] = b:vht_move.hex_start
+      let l:pos[2] = b:ht_move.hex_start
     else
-      let l:pos[2] = b:vht_move.hex_end
+      let l:pos[2] = b:ht_move.hex_end
     endif
   endif
 
@@ -67,55 +67,55 @@ function! vim_hex_this#move#chunk(dir)
     let l:pos[2] = l:x
   endif
 
-  call vim_hex_this#move#curmove(l:pos)
+  call hex_this#move#curmove(l:pos)
 endfunction
 
-function! vim_hex_this#move#hl(dir)
+function! hex_this#move#hl(dir)
   if index(keys(s:hl), a:dir) == -1
     throw '[VHT] Called <SID>hl with arg not [hl]'
   endif
 
   let l:pos = <SID>out_of_bounds()
   if l:pos != getpos('.')
-    call vim_hex_this#move#curmove(l:pos)
+    call hex_this#move#curmove(l:pos)
     return
   endif
 
-  if l:pos[2] == b:vht_move.hex_start && a:dir == 'h'
+  if l:pos[2] == b:ht_move.hex_start && a:dir == 'h'
     let l:pos[1] = line('.') + s:hl[a:dir]
-    let l:pos[2] = b:vht_move.hex_end
+    let l:pos[2] = b:ht_move.hex_end
     if line('.') != 1
-      call vim_hex_this#move#curmove(l:pos)
+      call hex_this#move#curmove(l:pos)
     endif
     return
   endif
 
-  if l:pos[2] == b:vht_move.hex_end && a:dir == 'l'
+  if l:pos[2] == b:ht_move.hex_end && a:dir == 'l'
     let l:pos[1] = line('.') + s:hl[a:dir]
-    let l:pos[2] = b:vht_move.hex_start
+    let l:pos[2] = b:ht_move.hex_start
     if line('.') != line('$')
-      call vim_hex_this#move#curmove(l:pos)
+      call hex_this#move#curmove(l:pos)
     endif
     return
   endif
 
   let l:pos[2] += s:hl[a:dir]
-  if index(b:vht_move.space_arr, l:pos[2]) != -1
+  if index(b:ht_move.space_arr, l:pos[2]) != -1
     let l:pos[2] += s:hl[a:dir]
   endif
 
-  call vim_hex_this#move#curmove(l:pos)
+  call hex_this#move#curmove(l:pos)
 endfunction
 
-function! vim_hex_this#move#wb(dir)
+function! hex_this#move#wb(dir)
   if index(keys(s:wb), a:dir) == -1
     throw '[VHT] Called <SID>wb with arg not [wb]'
   endif
-	call vim_hex_this#move#hl(s:wb[a:dir])
-	call vim_hex_this#move#hl(s:wb[a:dir])
+	call hex_this#move#hl(s:wb[a:dir])
+	call hex_this#move#hl(s:wb[a:dir])
 endfunction
 
-function! vim_hex_this#move#jk(dir)
+function! hex_this#move#jk(dir)
   if index(keys(s:jk), a:dir) == -1
     throw '[VHT] Called <SID>jk with arg not [jk]'
   endif
@@ -124,36 +124,36 @@ function! vim_hex_this#move#jk(dir)
 				\ || (l:pos[1] == line('$') && a:dir == 'j'))
     let l:pos[1] += s:jk[a:dir]
   endif
-  call vim_hex_this#move#curmove(l:pos)
+  call hex_this#move#curmove(l:pos)
 endfunction
 
-function! vim_hex_this#move#rst(...)
+function! hex_this#move#rst(...)
 	if exists('a:000')
 		exec 'normal! ' . join(a:000, ' ')
 	endif
-  call vim_hex_this#move#curmove(<SID>out_of_bounds())
+  call hex_this#move#curmove(<SID>out_of_bounds())
 endfunction
 
-function! vim_hex_this#move#sol()
-  call vim_hex_this#move#curmove(
-        \ [bufnr(), line('.'), b:vht_move.hex_start, 0])
+function! hex_this#move#sol()
+  call hex_this#move#curmove(
+        \ [bufnr(), line('.'), b:ht_move.hex_start, 0])
 endfunction
 
-function! vim_hex_this#move#eol()
-  call vim_hex_this#move#curmove(
-        \ [bufnr(), line('.'), b:vht_move.hex_end, 0])
+function! hex_this#move#eol()
+  call hex_this#move#curmove(
+        \ [bufnr(), line('.'), b:ht_move.hex_end, 0])
 endfunction
 
-function! vim_hex_this#move#inbound()
-	call vim_hex_this#move#curmove(<SID>out_of_bounds())
+function! hex_this#move#inbound()
+	call hex_this#move#curmove(<SID>out_of_bounds())
 endfunction
 
 """"""" Display functions
 
-function! vim_hex_this#move#curmove(pos)
+function! hex_this#move#curmove(pos)
   " echo a:pos
   call setpos('.', a:pos)
-  call vim_hex_this#move#align_hl_groups()
+  call hex_this#move#align_hl_groups()
 endfunction
 
 " vim: noet ts=2 sw=2 tw=110

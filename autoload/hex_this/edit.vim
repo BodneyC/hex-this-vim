@@ -16,21 +16,21 @@ endfunction
 
 """""""" Converters
 
-function! vim_hex_this#edit#hex2ascii(str)
+function! hex_this#edit#hex2ascii(str)
   return nr2char(str2nr(a:str, 16))
 endfunction
 
-function! vim_hex_this#edit#ascii2hex(hex)
+function! hex_this#edit#ascii2hex(hex)
   return printf("%02x", char2nr(a:hex))
 endfunction
 
-function! vim_hex_this#edit#dec2hex(dec)
+function! hex_this#edit#dec2hex(dec)
   return printf("%02x", a:dec)
 endfunction
 
 """""""" User input
 
-function! vim_hex_this#edit#input_hex()
+function! hex_this#edit#input_hex()
   let l:cur_byte = <SID>byte_under_cursor()
   let l:msg = '(' . l:cur_byte . ') Input hex'
   let l:ret = ''
@@ -46,14 +46,14 @@ function! vim_hex_this#edit#input_hex()
   return l:ret
 endfunction
 
-function! vim_hex_this#edit#input_ascii()
-  let l:cur_byte = vim_hex_this#edit#hex2ascii(<SID>byte_under_cursor())
+function! hex_this#edit#input_ascii()
+  let l:cur_byte = hex_this#edit#hex2ascii(<SID>byte_under_cursor())
   echo '(' . l:cur_byte . ') Input ASCII char: '
-  return vim_hex_this#edit#ascii2hex(getchar())
+  return hex_this#edit#ascii2hex(getchar())
 endfunction
 
-function! vim_hex_this#edit#input_dec()
-  let l:cur_byte = char2nr(vim_hex_this#edit#hex2ascii(<SID>byte_under_cursor()))
+function! hex_this#edit#input_dec()
+  let l:cur_byte = char2nr(hex_this#edit#hex2ascii(<SID>byte_under_cursor()))
   let l:msg = '(' . l:cur_byte . ') Input decimal'
   let l:inp = input(l:msg . ': ')
   while v:true
@@ -68,28 +68,28 @@ function! vim_hex_this#edit#input_dec()
     if l:msge == '' | break | endif
     let l:inp = input(l:msg . ' ["' . l:inp . '" ' . l:msge . ']: ')
   endwhile
-  return vim_hex_this#edit#dec2hex(l:inp)
+  return hex_this#edit#dec2hex(l:inp)
 endfunction
 
-function! vim_hex_this#edit#input_any()
+function! hex_this#edit#input_any()
   let l:cur_byte = <SID>byte_under_cursor()
   let l:msg = '(' . l:cur_byte . ') Input: '
   let l:inp = input(l:msg)
   if len(l:inp) == 1
-    return vim_hex_this#edit#ascii2hex(l:inp)
+    return hex_this#edit#ascii2hex(l:inp)
   elseif len(l:inp) == 2 
         \ && index(s:hex_chars, l:inp[0]) != -1
         \ && index(s:hex_chars, l:inp[1]) != -1
     return l:inp
   elseif l:inp =~# '^\d\+$'
-    return vim_hex_this#edit#dec2hex(l:inp)
+    return hex_this#edit#dec2hex(l:inp)
   endif
   return l:inp
   " throw '[VHT] Input "' . l:inp . '" not hex, ascii, or decimal'
 endfunction
 
-function! vim_hex_this#edit#input_pick_fmt()
-  let l:Finput = function('vim_hex_this#edit#input_' 
+function! hex_this#edit#input_pick_fmt()
+  let l:Finput = function('hex_this#edit#input_' 
         \ . s:func_opts[
         \     inputlist(
         \       map(s:func_opts[2:], { i, e ->
@@ -103,8 +103,8 @@ endfunction
 
 """""""" Editing
 
-function! vim_hex_this#edit#change_one(...) abort
-  call vim_hex_this#move#align_hl_groups()
+function! hex_this#edit#change_one(...) abort
+  call hex_this#move#align_hl_groups()
   if ! exists('b:byte_inf')
     echo '[VHT] No byte selected'
     return
@@ -116,7 +116,7 @@ function! vim_hex_this#edit#change_one(...) abort
     throw '[VHT] Called input_<fmt> with arg not (dec|hex|ascii)'
   endif
 
-  let l:Finput = function('vim_hex_this#edit#input_' . l:inp_fmt)
+  let l:Finput = function('hex_this#edit#input_' . l:inp_fmt)
   let l:inp = l:Finput()
   call <SID>clear_cmd_line()
 
@@ -125,36 +125,36 @@ function! vim_hex_this#edit#change_one(...) abort
   let l:sob = copy(l:pos)
 
   let l:sob[2] = b:byte_inf.hex_off
-  call vim_hex_this#move#curmove(l:sob)
+  call hex_this#move#curmove(l:sob)
   exec 'normal! R' . l:inp
 
   let l:sob[2] = b:byte_inf.ascii_off
   call setpos('.', l:sob)
-  let l:ascii = vim_hex_this#edit#hex2ascii(l:inp)
+  let l:ascii = hex_this#edit#hex2ascii(l:inp)
   if len(l:ascii) > 1
     let l:ascii = '.'
   endif
   exec 'normal! r' . l:ascii
   
-  call vim_hex_this#move#curmove(l:pos)
+  call hex_this#move#curmove(l:pos)
 endfunction
 
-function! vim_hex_this#edit#change_many(inp_fmt) abort
-  call vim_hex_this#move#align_hl_groups()
+function! hex_this#edit#change_many(inp_fmt) abort
+  call hex_this#move#align_hl_groups()
   while v:true
     echom join(getpos('.'), ' ')
-    call vim_hex_this#edit#change_one()
+    call hex_this#edit#change_one()
     normal ll
     call <SID>clear_cmd_line()
   endwhile
 endfunction
 
-function! vim_hex_this#edit#move_and_change(n, seq, inp_fmt) abort
+function! hex_this#edit#move_and_change(n, seq, inp_fmt) abort
   exec 'normal ' . a:seq
   if n < 2
-    call vim_hex_this#edit#change_one(a:inp_fmt)
+    call hex_this#edit#change_one(a:inp_fmt)
   else
-    call vim_hex_this#edit#change_many(a:inp_fmt)
+    call hex_this#edit#change_many(a:inp_fmt)
   endif
 endfunction
 
