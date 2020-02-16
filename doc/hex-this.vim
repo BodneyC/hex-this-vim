@@ -39,7 +39,10 @@ CONTENTS                                                    *HexThisContents*
 USAGE                                                         *HexThisUsage*
 
 
-I've tried to keep/emulate as much of the standard Vim as possible, i.e. movement. However it should be noted that each of the movement keys have been mapped to a function which keeps you within the boundaries of the hex.
+I've tried to keep/emulate as much of the standard Vim as possible, i.e. 
+  movement. However it should be noted that each of the movement keys have
+  been mapped to a function which keeps you within the boundaries of the 
+  hex.
 
 Normal commands mapped as best I could (movement):
 
@@ -96,6 +99,11 @@ COMMANDS                                                   *HexThisCommands*
     simply let Hex-This figure it out; the formatting options are quite 
     simplistic so Hex-This should do a good job in figuring out the format
 
+    *HexAddLines*
+
+  In case you want to add data to the file, this command will append blank
+    lines, either |g:hex_this_n_lines| number or the number specified.
+
 
 ==========================================================================
 CONFIGURATION                                         *HexThisConfiguration*
@@ -150,12 +158,19 @@ OTHERS                                                       *HexThisOthers*
                                  Desc: Default location to store hex-this
                                        files
 
+  *g:hex_this_n_lines*           Default: `16`
+
+                                 Desc: Number of line to append when using
+                                       |HexAddLines|
+
 
 ==========================================================================
 TODOS                                                         *HexThisTODOs*
 
 
-- Use the thing and test it, find issue, test them
+- Use the thing and test it, find issues, test them
+- `DeleteFromCursor`
+- `AppendOne`
 
 
 ==========================================================================

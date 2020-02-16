@@ -5,9 +5,14 @@ Hex-This is a hex editor for Vim, I've found a couple around on the web and [Vim
 
 Hopefully, this one is neither.
 
+## Short Demo
+
+![demo](media/demo.mp4)
+
+
 ## Commands
 
-There are three commands that Hex-This provides:
+There are four commands that Hex-This provides:
 
 1. **HexThis**
 
@@ -32,6 +37,10 @@ By default, if you return to a file for which a hex-this file exists, the plugin
 This is the command used to write the contents of a hex-this file back to the original. It uses XXD's `-r` option, so formatting is important here.
 
 One can either specify the formatting as with the other commands, or simply let Hex-This figure it out; the formatting options are quite simplistic so Hex-This should do a good job in figuring out the format.
+
+4. **HexAddLines**
+
+In case you want to add data to the file, this command will append blank lines, either `g:hex_this_n_lines` number or the number specified.
 
 
 ## Formatting

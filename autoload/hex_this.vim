@@ -186,6 +186,8 @@ function! hex_this#write(...) abort
     let l:disp = <SID>guess_disp_inf()
   endif
 
+  if &modified | w | endif
+
   let l:fns = { 'store_fn': expand('%:p') }
 
   if l:fns.store_fn !~# '^' . g:hex_this_cache_dir
@@ -211,6 +213,43 @@ function! hex_this#write(...) abort
       endif
     endfor
   endif
+endfunction
+
+function! hex_this#add_lines(...) abort
+  if expand('%') !~# '\.xxd$'
+    echo '[VHT] Not an .xxd file'
+    return
+  endif
+
+  let l:disp = <SID>guess_disp_inf()
+  let l:lines = get(a:, '1', g:hex_this_n_lines)
+
+  let l:hpos = str2nr(substitute(getline('$'), ':.*$', '', ''), 16)
+
+  let l:l1 = getline(1)
+  let l:mid = substitute(l:l1, '^.*: \(.*\)  .*$', '\=repeat("0", len(submatch(1)))', '')
+  let l:mid = substitute(l:mid, '\(' . repeat('.', l:disp.bytes * 2) . '\).', '\1 ', 'g')
+  let l:blanks = l:mid
+        \ . '  '
+        \ . substitute(l:l1, '^.*  \(.*\)$', '\=repeat(".", len(submatch(1)))', '')
+
+  let l:diff = len(l:l1) - len(getline('$'))
+  if l:diff
+    exec 'normal! GA' . repeat('.', l:diff)
+    let l:ll = getline('$')
+    let l:llm = substitute(l:ll, '^.*: \(.\{-\}\)\(  .*\)  .*$', '\=join([submatch(1), repeat("0", len(submatch(2)))], "")', '')
+    let l:llm = substitute(l:llm, '\(' . repeat('.', l:disp.bytes * 2) . '\).', '\1 ', 'g')
+    let l:ll = substitute(l:ll, ': .*  \([^ ]\)', ': ' . l:llm . '  \1', '')
+    exec 'normal! Gdd'
+    call append(line('$'), l:ll)
+  endif
+
+  for l:i in range(l:lines)
+    let l:hpos += l:disp.cols
+    let l:ln = printf('%08x', l:hpos) . ': ' . l:blanks
+    call append(line('$'), l:ln)
+  endfor
+
 endfunction
 
 " vim: et ts=2 sw=2 tw=110
