@@ -152,8 +152,6 @@ function! hex_this#init(...) abort " cols, bytes, upper
     let b:ht_disp = <SID>guess_disp_inf()
   endif
 
-  echo b:ht_disp
-
   set ft=xxd
   call hex_this#move#inbound()
 

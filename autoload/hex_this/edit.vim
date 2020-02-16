@@ -118,11 +118,9 @@ function! hex_this#edit#change_one(...) abort
 
   let l:Finput = function('hex_this#edit#input_' . l:inp_fmt)
   let l:inp = l:Finput()
-  echom l:inp
   call <SID>clear_cmd_line()
 
   let l:pos = getpos('.')
-  echo l:pos
   let l:sob = copy(l:pos)
 
   let l:sob[2] = b:byte_inf.hex_off
