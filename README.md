@@ -7,7 +7,7 @@ Hopefully, this one is neither.
 
 ## Short Demo
 
-![demo](media/demo.mp4)
+![Demo](media/demo.gif)
 
 
 ## Commands
