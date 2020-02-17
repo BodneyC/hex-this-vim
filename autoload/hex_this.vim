@@ -1,6 +1,7 @@
 " let s:max_size = '68719476720'
 let s:standard_size = '4294967280'
 let s:pos_width = 11
+let s:macunix = has('mac') || has('macunix')
 
 function! s:verify_asides()
   " XXD
@@ -30,7 +31,7 @@ endfunction
 
 function! s:encode_fn(fn)
   let l:cmd = g:hex_this_base64_path . ' '
-  if has('unix')
+  if ! s:macunix
     let l:cmd .= ' -w 0 '
   endif
   let l:cmd .= ' <<< ' . fnamemodify(a:fn, ':h')
@@ -227,11 +228,10 @@ function! hex_this#add_lines(...) abort
   let l:hpos = str2nr(substitute(getline('$'), ':.*$', '', ''), 16)
 
   let l:l1 = getline(1)
-  let l:mid = substitute(l:l1, '^.*: \(.*\)  .*$', '\=repeat("0", len(submatch(1)))', '')
+  let l:mid = substitute(l:l1, '^.*: \(.\{-}\)  .*$', '\=repeat("0", len(submatch(1)))', '')
   let l:mid = substitute(l:mid, '\(' . repeat('.', l:disp.bytes * 2) . '\).', '\1 ', 'g')
-  let l:blanks = l:mid
-        \ . '  '
-        \ . substitute(l:l1, '^.*  \(.*\)$', '\=repeat(".", len(submatch(1)))', '')
+  let l:blanks = l:mid . '  '
+        \ . substitute(l:l1, '^.\{-}  \(.*\)$', '\=repeat(".", len(submatch(1)))', '')
 
   let l:diff = len(l:l1) - len(getline('$'))
   if l:diff

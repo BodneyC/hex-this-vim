@@ -17,7 +17,11 @@ endfunction
 """""""" Converters
 
 function! hex_this#edit#hex2ascii(str)
-  return nr2char(str2nr(a:str, 16))
+  let l:nr = str2nr(a:str, 16)
+  if l:nr < 33 || (l:nr > 126 && l:nr < 161)
+    let l:nr = 46 " Period
+  endif
+  return nr2char(l:nr)
 endfunction
 
 function! hex_this#edit#ascii2hex(hex)
@@ -84,8 +88,8 @@ function! hex_this#edit#input_any()
   elseif l:inp =~# '^\d\+$'
     return hex_this#edit#dec2hex(l:inp)
   endif
-  return l:inp
-  " throw '[VHT] Input "' . l:inp . '" not hex, ascii, or decimal'
+  " return l:inp
+  throw '[VHT] Input "' . l:inp . '" not hex, ascii, or decimal'
 endfunction
 
 function! hex_this#edit#input_pick_fmt()
@@ -105,6 +109,7 @@ endfunction
 
 function! hex_this#edit#change_one(...) abort
   call hex_this#move#align_hl_groups()
+
   if ! exists('b:byte_inf')
     echo '[VHT] No byte selected'
     return
