@@ -88,8 +88,7 @@ function! hex_this#edit#input_any()
   elseif l:inp =~# '^\d\+$'
     return hex_this#edit#dec2hex(l:inp)
   endif
-  " return l:inp
-  throw '[VHT] Input "' . l:inp . '" not hex, ascii, or decimal'
+  echo '[HT] Input "' . l:inp . '" not hex, ascii, or decimal'
 endfunction
 
 function! hex_this#edit#input_pick_fmt()
@@ -111,14 +110,14 @@ function! hex_this#edit#change_one(...) abort
   call hex_this#move#align_hl_groups()
 
   if ! exists('b:byte_inf')
-    echo '[VHT] No byte selected'
+    echo '[HT] No byte selected'
     return
   endif
 
   let l:inp_fmt = get(a:, '1', 'any')
 
   if index(s:func_opts, l:inp_fmt) == -1
-    throw '[VHT] Called input_<fmt> with arg not (dec|hex|ascii)'
+    throw '[HT] Called input_<fmt> with arg not (dec|hex|ascii)'
   endif
 
   let l:Finput = function('hex_this#edit#input_' . l:inp_fmt)
@@ -153,9 +152,22 @@ function! hex_this#edit#change_many(inp_fmt) abort
   endwhile
 endfunction
 
-function! hex_this#edit#move_and_change(n, seq, inp_fmt) abort
+function! hex_this#edit#move_and_change(n, inp_fmt, seq) abort
   exec 'normal ' . a:seq
-  if n < 2
+  if a:n < 2
+    call hex_this#edit#change_one(a:inp_fmt)
+  else
+    call hex_this#edit#change_many(a:inp_fmt)
+  endif
+endfunction
+
+function! hex_this#edit#func_and_change(n, inp_fmt, func, ...) abort
+  let l:args = ''
+  if exists('a:000')
+    let l:args = join(a:000, ', ')
+  endif
+  exec 'call ' . a:func . '(' . l:args . ')' |
+  if a:n < 2
     call hex_this#edit#change_one(a:inp_fmt)
   else
     call hex_this#edit#change_many(a:inp_fmt)

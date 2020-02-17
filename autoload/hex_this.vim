@@ -9,7 +9,7 @@ function! s:verify_asides()
     let g:hex_this_xxd_path = systemlist('command -v xxd')[0]
   endif
   if ! executable(g:hex_this_xxd_path)
-    throw '[VHT] XXD not found on path, please set g:hex_this_xxd_path'
+    throw '[HT] XXD not found on path, please set g:hex_this_xxd_path'
   endif
 
   " base64
@@ -17,7 +17,7 @@ function! s:verify_asides()
     let g:hex_this_base64_path = systemlist('command -v base64')[0]
   endif
   if ! executable(g:hex_this_base64_path)
-    throw '[VHT] Base64 not found on path, please set g:hex_this_base64_path'
+    throw '[HT] Base64 not found on path, please set g:hex_this_base64_path'
   endif
 
   " Cache dir
@@ -113,6 +113,10 @@ function! s:guess_disp_inf()
         \ }
 endfunction
 
+function! s:set_ht_end_pos()
+	let b:ht_end_pos = [bufnr(), line('$'), b:ht_move.hex_end, 0]
+endfunction
+
 """""" Core
 
 function! hex_this#init(...) abort " cols, bytes, upper
@@ -131,10 +135,11 @@ function! hex_this#init(...) abort " cols, bytes, upper
 
   let l:fsize = getfsize(l:fns.fn)
   if l:fsize > s:standard_size
-    throw '[VHT] File very large, best use an actual hex editor...'
+    throw '[HT] File very large, best use an actual hex editor...'
   endif
 
   let b:ht_move = {}
+  let b:ht_move.ignore_end = v:false
   let b:ht_move.hex_start = s:pos_width
   let b:ht_move.ascii_start = s:pos_width + (b:ht_disp.cols * 2)
         \ + (b:ht_disp.cols / b:ht_disp.bytes)
@@ -156,7 +161,7 @@ function! hex_this#init(...) abort " cols, bytes, upper
   set ft=xxd
   call hex_this#move#inbound()
 
-	let b:ht_end_pos = [bufnr(), line('$'), b:ht_move.hex_end, 0]
+  call <SID>set_ht_end_pos()
 
   call hex_this#mappings#set_mappings()
 endfunction
@@ -173,7 +178,7 @@ function! hex_this#write(...) abort
   call <SID>verify_asides()
 
   if expand('%') !~# '\.xxd$'
-    echo '[VHT] Not an .xxd file'
+    echo '[HT] Not an .xxd file'
     return
   endif
 
@@ -192,7 +197,7 @@ function! hex_this#write(...) abort
   let l:fns = { 'store_fn': expand('%:p') }
 
   if l:fns.store_fn !~# '^' . g:hex_this_cache_dir
-    throw '[VHT] File not found in g:hex_this_cache_dir (' . l:fns.store_fn . ')'
+    throw '[HT] File not found in g:hex_this_cache_dir (' . l:fns.store_fn . ')'
   endif
 
   let l:fns.fn = <SID>decode_store_fn(l:fns.store_fn)
@@ -209,7 +214,7 @@ function! hex_this#write(...) abort
         try
           exec 'bdelete! ' . l:bufnr
         catch /^E94.*/
-          echo '[VHT] Buffer ' . l:bufnr . ' not found'
+          echo '[HT] Buffer ' . l:bufnr . ' not found'
         endtry
       endif
     endfor
@@ -218,20 +223,21 @@ endfunction
 
 function! hex_this#add_lines(...) abort
   if expand('%') !~# '\.xxd$'
-    echo '[VHT] Not an .xxd file'
+    echo '[HT] Not an .xxd file'
     return
   endif
 
   let l:disp = <SID>guess_disp_inf()
   let l:lines = get(a:, '1', g:hex_this_n_lines)
 
+  if l:lines == 0 | return | endif
+
   let l:hpos = str2nr(substitute(getline('$'), ':.*$', '', ''), 16)
 
   let l:l1 = getline(1)
   let l:mid = substitute(l:l1, '^.*: \(.\{-}\)  .*$', '\=repeat("0", len(submatch(1)))', '')
   let l:mid = substitute(l:mid, '\(' . repeat('.', l:disp.bytes * 2) . '\).', '\1 ', 'g')
-  let l:blanks = l:mid . '  '
-        \ . substitute(l:l1, '^.\{-}  \(.*\)$', '\=repeat(".", len(submatch(1)))', '')
+  let l:blanks = l:mid . '  ' . substitute(l:l1, '^.\{-}  \(.*\)$', '\=repeat(".", len(submatch(1)))', '')
 
   let l:diff = len(l:l1) - len(getline('$'))
   if l:diff
@@ -248,6 +254,49 @@ function! hex_this#add_lines(...) abort
     let l:hpos += l:disp.cols
     let l:ln = printf('%08x', l:hpos) . ': ' . l:blanks
     call append(line('$'), l:ln)
+  endfor
+
+endfunction
+
+function! hex_this#add_bytes(...) abort
+  if ! exists('b:ht_move')
+    echo '[HT] File not loaded with HT'
+    return
+  endif
+
+  let l:disp = <SID>guess_disp_inf()
+  let l:bytes = get(a:, '1', g:hex_this_n_bytes)
+
+  if l:bytes == 0 | return | endif
+
+  let l:diff = len(getline(1)) - len(getline('$'))
+  let l:n_lines = 0
+  let l:mod = l:bytes
+
+  if l:bytes > l:diff + b:ht_disp.cols
+    let l:n_lines = (l:bytes - l:diff) / b:ht_disp.cols
+    let l:mod = (l:bytes - l:diff) % b:ht_disp.cols
+  endif
+
+  call hex_this#add_lines(l:n_lines)
+
+  for l:i in range(l:mod)
+    let l:diff = len(getline(1)) - len(getline('$'))
+    if l:diff
+      normal! GA.
+      normal G
+      let b:ht_move.ignore_end = v:true
+      normal l
+      let b:ht_move.ignore_end = v:false
+      normal! R00
+    else
+      let l:l1 = getline(1)
+      let l:mid = '00' . substitute(l:l1, '^.*: \(.\{-}\)  .*$', '\=repeat(" ", len(submatch(1)))', '')[2:]
+      let l:hpos = str2nr(substitute(getline('$'), ':.*$', '', ''), 16) + l:disp.cols
+      let l:ln = printf('%08x', l:hpos) . ': ' . l:mid . '  .'
+      call append(line('$'), l:ln)
+      call <SID>set_ht_end_pos()
+    endif
   endfor
 
 endfunction

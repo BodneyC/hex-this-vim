@@ -42,7 +42,7 @@ endfunction
 
 function! hex_this#move#chunk(dir)
   if index(keys(s:chunk), a:dir) == -1
-    throw '[VHT] Called <SID>chunk with arg not (g[eE]|[wWbBeE])'
+    throw '[HT] Called <SID>chunk with arg not (g[eE]|[wWbBeE])'
   endif
 
   exec 'normal! ' . a:dir
@@ -72,7 +72,7 @@ endfunction
 
 function! hex_this#move#hl(dir)
   if index(keys(s:hl), a:dir) == -1
-    throw '[VHT] Called <SID>hl with arg not [hl]'
+    throw '[HT] Called <SID>hl with arg not [hl]'
   endif
 
   let l:pos = <SID>out_of_bounds()
@@ -109,7 +109,7 @@ endfunction
 
 function! hex_this#move#wb(dir)
   if index(keys(s:wb), a:dir) == -1
-    throw '[VHT] Called <SID>wb with arg not [wb]'
+    throw '[HT] Called <SID>wb with arg not [wb]'
   endif
 	call hex_this#move#hl(s:wb[a:dir])
 	call hex_this#move#hl(s:wb[a:dir])
@@ -117,7 +117,7 @@ endfunction
 
 function! hex_this#move#jk(dir)
   if index(keys(s:jk), a:dir) == -1
-    throw '[VHT] Called <SID>jk with arg not [jk]'
+    throw '[HT] Called <SID>jk with arg not [jk]'
   endif
   let l:pos = <SID>out_of_bounds()
   if !((l:pos[1] == 1 && a:dir == 'k') 
@@ -153,6 +153,9 @@ endfunction
 function! hex_this#move#curmove(pos)
   " echo a:pos
   call setpos('.', a:pos)
+	if ! b:ht_move.ignore_end && getline('.')[col('.') - 1] == ' '
+		normal! gE
+	endif
   call hex_this#move#align_hl_groups()
 endfunction
 

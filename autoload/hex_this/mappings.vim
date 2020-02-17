@@ -35,7 +35,7 @@ endfunction
 
 function! hex_this#mappings#set_mappings() abort
   if ! exists('b:ht_disp') || ! exists('b:ht_move')
-    throw '[VHT] Cannot set mapping if buffer opts are not set'
+    throw '[HT] Cannot set mapping if buffer opts are not set'
   endif
 
   mapclear!
@@ -59,8 +59,8 @@ function! hex_this#mappings#set_mappings() abort
   call <SID>func_mapping('n', 'H',       'hex_this#move#rst', '"H"')
   call <SID>func_mapping('n', 'L',       'hex_this#move#rst', '"L"')
 
-  call <SID>func_mapping('n', 'gg', 'hex_this#move#curmove', b:ht_init_pos)
-  call <SID>func_mapping('n', 'G',  'hex_this#move#curmove', b:ht_end_pos)
+  call <SID>func_mapping('n', 'gg', 'hex_this#move#curmove', 'b:ht_init_pos')
+  call <SID>func_mapping('n', 'G',  'hex_this#move#curmove', 'b:ht_end_pos')
 
   call <SID>func_mapping('n', '$',  'hex_this#move#eol')
   call <SID>func_mapping('n', '^',  'hex_this#move#sol')
@@ -81,11 +81,11 @@ function! hex_this#mappings#set_mappings() abort
   call <SID>func_mapping('n', 'r', 'hex_this#edit#change_one')
   call <SID>func_mapping('n', 's', 'hex_this#edit#change_one')
   call <SID>func_mapping('n', 'i', 'hex_this#edit#change_one', '"pick_fmt"')
-  call <SID>func_mapping('n', 'I', 'hex_this#edit#move_and_change', 1, '"0"', '"pick_fmt"')
+  call <SID>func_mapping('n', 'I', 'hex_this#edit#move_and_change', 1, '"pick_fmt"', '"0"')
   call <SID>func_mapping('n', 'a', 'hex_this#edit#change_one')
-  call <SID>func_mapping('n', 'A', 'hex_this#edit#move_and_change', 1, '"$"', '"pick_fmt"')
+  call <SID>func_mapping('n', 'A', 'hex_this#edit#func_and_change', 1, '"pick_fmt"', '"hex_this#add_bytes"', '"1"')
   call <SID>func_mapping('n', 'R', 'hex_this#edit#change_many', '"any"')
-  call <SID>func_mapping('n', 'S', 'hex_this#edit#move_and_change', 2, '"0"', '"any"')
+  call <SID>func_mapping('n', 'S', 'hex_this#edit#move_and_change', 2, '"any"', '"0"')
 
   call <SID>none_mappings(s:n_none_mappings, 'n')
   call <SID>none_mappings(s:i_none_mappings, 'i')
