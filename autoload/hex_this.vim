@@ -30,40 +30,40 @@ endfunction
 """""" External commands
 
 function! s:encode_fn(fn)
-  let l:cmd = g:hex_this_base64_path . ' '
+  let cmd = g:hex_this_base64_path . ' '
   if ! s:macunix
-    let l:cmd .= ' -w 0 '
+    let cmd .= ' -w 0 '
   endif
-  let l:cmd .= ' <<< ' . fnamemodify(a:fn, ':h')
-  let l:directory = systemlist(l:cmd)[0]
-  return l:directory . '/' . fnamemodify(a:fn, ':t') . '.xxd'
+  let cmd .= ' <<< ' . fnamemodify(a:fn, ':h')
+  let directory = systemlist(cmd)[0]
+  return directory . '/' . fnamemodify(a:fn, ':t') . '.xxd'
 endfunction
 
 function! s:decode_store_fn(store_fn)
-  let l:fn = substitute(a:store_fn, g:hex_this_cache_dir . '/', '', '')
-  let l:cmd = g:hex_this_base64_path . ' --decode '
-  let l:cmd .= ' <<< ' . fnamemodify(l:fn, ':h')
-  let l:directory = systemlist(l:cmd)[0]
-  return l:directory . '/' . substitute(fnamemodify(l:fn, ':t'), '.xxd', '', '')
+  let fn = substitute(a:store_fn, g:hex_this_cache_dir . '/', '', '')
+  let cmd = g:hex_this_base64_path . ' --decode '
+  let cmd .= ' <<< ' . fnamemodify(fn, ':h')
+  let directory = systemlist(cmd)[0]
+  return directory . '/' . substitute(fnamemodify(fn, ':t'), '.xxd', '', '')
 endfunction
 
 function! s:make_xxd_read_cmd(fns)
-  let l:s  = g:hex_this_xxd_path . ' '
-  let l:s .= ' -c ' . b:ht_disp.cols
-  let l:s .= ' -g ' . b:ht_disp.bytes
-  let l:s .= b:ht_disp.upper ? ' -u ' : ' '
-  let l:s .= a:fns.fn
-  let l:s .= ' > ' . a:fns.store_fn
-  return l:s
+  let s  = g:hex_this_xxd_path . ' '
+  let s .= ' -c ' . b:ht_disp.cols
+  let s .= ' -g ' . b:ht_disp.bytes
+  let s .= b:ht_disp.upper ? ' -u ' : ' '
+  let s .= a:fns.fn
+  let s .= ' > ' . a:fns.store_fn
+  return s
 endfunction
 
 function! s:make_xxd_write_cmd(fns, disp)
-  let l:s = g:hex_this_xxd_path . ' -r '
-  let l:s .= ' -c ' . a:disp.cols
-  let l:s .= ' -g ' . a:disp.bytes
-  let l:s .= a:disp.upper ? ' -u ' : ' '
-  let l:s .= a:fns.store_fn . ' > ' . a:fns.fn
-  return l:s
+  let s = g:hex_this_xxd_path . ' -r '
+  let s .= ' -c ' . a:disp.cols
+  let s .= ' -g ' . a:disp.bytes
+  let s .= a:disp.upper ? ' -u ' : ' '
+  let s .= a:fns.store_fn . ' > ' . a:fns.fn
+  return s
 endfunction
 
 """""" Utility
@@ -80,10 +80,10 @@ endfunction
 function s:confirm(msg)
   redraw
   echom a:msg . ' '
-  let l:answer = nr2char(getchar())
-  if l:answer ==? 'y'
+  let answer = nr2char(getchar())
+  if answer ==? 'y'
     return 1
-  elseif l:answer ==? 'n'
+  elseif answer ==? 'n'
     return 0
   else
     echo 'Please enter "y" or "n"'
@@ -92,24 +92,24 @@ function s:confirm(msg)
 endfun
 
 function! s:calculate_space_arr()
-	let l:space_arr = []
-	let l:x = b:ht_move.hex_start - 1
+	let space_arr = []
+	let x = b:ht_move.hex_start - 1
 	while v:true
-		let l:x += (b:ht_disp.bytes * 2) + 1
-		if l:x > b:ht_move.hex_end
+		let x += (b:ht_disp.bytes * 2) + 1
+		if x > b:ht_move.hex_end
 			break
 		endif
-		call add(l:space_arr, l:x)
+		call add(space_arr, x)
 	endwhile
-	return l:space_arr
+	return space_arr
 endfunction
 
 function! s:guess_disp_inf()
-  let l:line = substitute(getline(1), '^.*: \(.*\)  .*$', '\1', '')
+  let line = substitute(getline(1), '^.*: \(.*\)  .*$', '\1', '')
   return {
-        \ 'cols': len(substitute(l:line, ' ', '', 'g')) / 2,
-        \ 'bytes': len(substitute(l:line, '^\([^ ]*\) .*$', '\1', 'g')) / 2,
-        \ 'upper': len(substitute(l:line, '[A-Z]', '', '')) != len(l:line)
+        \ 'cols': len(substitute(line, ' ', '', 'g')) / 2,
+        \ 'bytes': len(substitute(line, '^\([^ ]*\) .*$', '\1', 'g')) / 2,
+        \ 'upper': len(substitute(line, '[A-Z]', '', '')) != len(line)
         \ }
 endfunction
 
@@ -119,13 +119,41 @@ endfunction
 
 """""" Core
 
+function! hex_this#continue() abort
+  let fns = { 'store_fn': expand('%:p') }
+
+  if fns.store_fn !~ '^' . g:hex_this_cache_dir . '.*\.xxd'
+    echoe fns.store_fn . ' not HexThis file'
+  endif
+
+  let fns.fn = <SID>decode_store_fn(fns.store_fn)
+
+  let b:ht_disp = <SID>guess_disp_inf()
+
+  let b:ht_move = {}
+  let b:ht_move.ignore_end = v:false
+  let b:ht_move.hex_start = s:pos_width
+  let b:ht_move.ascii_start = s:pos_width + (b:ht_disp.cols * 2)
+        \ + (b:ht_disp.cols / b:ht_disp.bytes)
+        \ + ((b:ht_disp.cols % b:ht_disp.bytes) ? 1 : 0)
+        \ + 1
+  let b:ht_move.hex_end = b:ht_move.ascii_start - 3
+  let b:ht_move.space_arr = <SID>calculate_space_arr()
+
+  call hex_this#move#inbound()
+
+  call <SID>set_ht_end_pos()
+
+  call hex_this#mappings#set_mappings()
+endfunction
+
 function! hex_this#init(...) abort " cols, bytes, upper
   call <SID>verify_asides()
 
-  let l:fns = { 'fn': expand('%:p') }
-  let l:fns.store_fn = g:hex_this_cache_dir . '/' . <SID>encode_fn(l:fns.fn)
+  let fns = { 'fn': expand('%:p') }
+  let fns.store_fn = g:hex_this_cache_dir . '/' . <SID>encode_fn(fns.fn)
 
-  let l:hex_buf = <SID>setup_buffer(l:fns.store_fn) " Create before setting buffer vars
+  let hex_buf = <SID>setup_buffer(fns.store_fn) " Create before setting buffer vars
 
   let b:ht_disp = {
         \ 'cols': get(a:, '1', g:hex_this_cols),
@@ -133,8 +161,8 @@ function! hex_this#init(...) abort " cols, bytes, upper
         \ 'upper': get(a:, '3', g:hex_this_upper)
         \ }
 
-  let l:fsize = getfsize(l:fns.fn)
-  if l:fsize > s:standard_size
+  let fsize = getfsize(fns.fn)
+  if fsize > s:standard_size
     throw '[HT] File very large, best use an actual hex editor...'
   endif
 
@@ -150,15 +178,14 @@ function! hex_this#init(...) abort " cols, bytes, upper
 
   let b:ht_init_pos = [bufnr(), 1, b:ht_move.hex_start, 0]
 
-  if getfsize(l:fns.store_fn) == 0
-    exec 'r!' . <SID>make_xxd_read_cmd(l:fns)
+  if getfsize(fns.store_fn) == 0
+    exec 'r!' . <SID>make_xxd_read_cmd(fns)
     e
     call hex_this#move#curmove(b:ht_init_pos)
   else
     let b:ht_disp = <SID>guess_disp_inf()
   endif
 
-  set ft=xxd
   call hex_this#move#inbound()
 
   call <SID>set_ht_end_pos()
@@ -168,9 +195,9 @@ endfunction
 
 function! hex_this#reset(...) abort " as init
   call <SID>verify_asides()
-  let l:fns = { 'fn': expand('%:p') }
-  let l:fns.store_fn = g:hex_this_cache_dir . '/' . <SID>encode_fn(l:fns.fn)
-  call delete(l:fns.store_fn)
+  let fns = { 'fn': expand('%:p') }
+  let fns.store_fn = g:hex_this_cache_dir . '/' . <SID>encode_fn(fns.fn)
+  call delete(fns.store_fn)
   exec 'call hex_this#init(' . join(a:000, ', ') . ')'
 endfunction
 
@@ -182,39 +209,39 @@ function! hex_this#write(...) abort
     return
   endif
 
-  let l:disp = {
+  let disp = {
         \ 'cols': get(a:, '1', g:hex_this_cols),
         \ 'bytes': get(a:, '2', g:hex_this_byte_space),
         \ 'upper': get(a:, '3', g:hex_this_upper)
         \ }
 
   if empty(a:000)
-    let l:disp = <SID>guess_disp_inf()
+    let disp = <SID>guess_disp_inf()
   endif
 
   if &modified | w | endif
 
-  let l:fns = { 'store_fn': expand('%:p') }
+  let fns = { 'store_fn': expand('%:p') }
 
-  if l:fns.store_fn !~# '^' . g:hex_this_cache_dir
-    throw '[HT] File not found in g:hex_this_cache_dir (' . l:fns.store_fn . ')'
+  if fns.store_fn !~# '^' . g:hex_this_cache_dir
+    throw '[HT] File not found in g:hex_this_cache_dir (' . fns.store_fn . ')'
   endif
 
-  let l:fns.fn = <SID>decode_store_fn(l:fns.store_fn)
+  let fns.fn = <SID>decode_store_fn(fns.store_fn)
 
-  call system(<SID>make_xxd_write_cmd(l:fns, l:disp))
-  echom <SID>make_xxd_write_cmd(l:fns, l:disp)
+  call system(<SID>make_xxd_write_cmd(fns, disp))
+  echom <SID>make_xxd_write_cmd(fns, disp)
 
-  exec 'edit ' . l:fns.fn
+  exec 'edit ' . fns.fn
 
-  if <SID>confirm('Delete ' . l:fns.store_fn . ' [yn]?')
-    call delete(l:fns.store_fn)
-    for l:bufnr in filter(range(1, bufnr('$')), 'bufexists(v:val)')
-      if fnamemodify(bufname(l:bufnr), ':p') == l:fns.store_fn
+  if <SID>confirm('Delete ' . fns.store_fn . ' [yn]?')
+    call delete(fns.store_fn)
+    for bufnr in filter(range(1, bufnr('$')), 'bufexists(v:val)')
+      if fnamemodify(bufname(bufnr), ':p') == fns.store_fn
         try
-          exec 'bdelete! ' . l:bufnr
+          exec 'bdelete! ' . bufnr
         catch /^E94.*/
-          echo '[HT] Buffer ' . l:bufnr . ' not found'
+          echo '[HT] Buffer ' . bufnr . ' not found'
         endtry
       endif
     endfor
@@ -227,33 +254,33 @@ function! hex_this#add_lines(...) abort
     return
   endif
 
-  let l:disp = <SID>guess_disp_inf()
-  let l:lines = get(a:, '1', g:hex_this_n_lines)
+  let disp = <SID>guess_disp_inf()
+  let lines = get(a:, '1', g:hex_this_n_lines)
 
-  if l:lines == 0 | return | endif
+  if lines == 0 | return | endif
 
-  let l:hpos = str2nr(substitute(getline('$'), ':.*$', '', ''), 16)
+  let hpos = str2nr(substitute(getline('$'), ':.*$', '', ''), 16)
 
-  let l:l1 = getline(1)
-  let l:mid = substitute(l:l1, '^.*: \(.\{-}\)  .*$', '\=repeat("0", len(submatch(1)))', '')
-  let l:mid = substitute(l:mid, '\(' . repeat('.', l:disp.bytes * 2) . '\).', '\1 ', 'g')
-  let l:blanks = l:mid . '  ' . substitute(l:l1, '^.\{-}  \(.*\)$', '\=repeat(".", len(submatch(1)))', '')
+  let l1 = getline(1)
+  let mid = substitute(l1, '^.*: \(.\{-}\)  .*$', '\=repeat("0", len(submatch(1)))', '')
+  let mid = substitute(mid, '\(' . repeat('.', disp.bytes * 2) . '\).', '\1 ', 'g')
+  let blanks = mid . '  ' . substitute(l1, '^.\{-}  \(.*\)$', '\=repeat(".", len(submatch(1)))', '')
 
-  let l:diff = len(l:l1) - len(getline('$'))
-  if l:diff
-    exec 'normal! GA' . repeat('.', l:diff)
-    let l:ll = getline('$')
-    let l:llm = substitute(l:ll, '^.*: \(.\{-\}\)\(  .*\)  .*$', '\=join([submatch(1), repeat("0", len(submatch(2)))], "")', '')
-    let l:llm = substitute(l:llm, '\(' . repeat('.', l:disp.bytes * 2) . '\).', '\1 ', 'g')
-    let l:ll = substitute(l:ll, ': .*  \([^ ]\)', ': ' . l:llm . '  \1', '')
+  let diff = len(l1) - len(getline('$'))
+  if diff
+    exec 'normal! GA' . repeat('.', diff)
+    let ll = getline('$')
+    let llm = substitute(ll, '^.*: \(.\{-\}\)\(  .*\)  .*$', '\=join([submatch(1), repeat("0", len(submatch(2)))], "")', '')
+    let llm = substitute(llm, '\(' . repeat('.', disp.bytes * 2) . '\).', '\1 ', 'g')
+    let ll = substitute(ll, ': .*  \([^ ]\)', ': ' . llm . '  \1', '')
     exec 'normal! Gdd'
-    call append(line('$'), l:ll)
+    call append(line('$'), ll)
   endif
 
-  for l:i in range(l:lines)
-    let l:hpos += l:disp.cols
-    let l:ln = printf('%08x', l:hpos) . ': ' . l:blanks
-    call append(line('$'), l:ln)
+  for i in range(lines)
+    let hpos += disp.cols
+    let ln = printf('%08x', hpos) . ': ' . blanks
+    call append(line('$'), ln)
   endfor
 
 endfunction
@@ -264,25 +291,25 @@ function! hex_this#add_bytes(...) abort
     return
   endif
 
-  let l:disp = <SID>guess_disp_inf()
-  let l:bytes = get(a:, '1', g:hex_this_n_bytes)
+  let disp = <SID>guess_disp_inf()
+  let bytes = get(a:, '1', g:hex_this_n_bytes)
 
-  if l:bytes == 0 | return | endif
+  if bytes == 0 | return | endif
 
-  let l:diff = len(getline(1)) - len(getline('$'))
-  let l:n_lines = 0
-  let l:mod = l:bytes
+  let diff = len(getline(1)) - len(getline('$'))
+  let n_lines = 0
+  let mod = bytes
 
-  if l:bytes > l:diff + b:ht_disp.cols
-    let l:n_lines = (l:bytes - l:diff) / b:ht_disp.cols
-    let l:mod = (l:bytes - l:diff) % b:ht_disp.cols
+  if bytes > diff + b:ht_disp.cols
+    let n_lines = (bytes - diff) / b:ht_disp.cols
+    let mod = (bytes - diff) % b:ht_disp.cols
   endif
 
-  call hex_this#add_lines(l:n_lines)
+  call hex_this#add_lines(n_lines)
 
-  for l:i in range(l:mod)
-    let l:diff = len(getline(1)) - len(getline('$'))
-    if l:diff
+  for i in range(mod)
+    let diff = len(getline(1)) - len(getline('$'))
+    if diff
       normal! GA.
       normal G
       let b:ht_move.ignore_end = v:true
@@ -290,11 +317,11 @@ function! hex_this#add_bytes(...) abort
       let b:ht_move.ignore_end = v:false
       normal! R00
     else
-      let l:l1 = getline(1)
-      let l:mid = '00' . substitute(l:l1, '^.*: \(.\{-}\)  .*$', '\=repeat(" ", len(submatch(1)))', '')[2:]
-      let l:hpos = str2nr(substitute(getline('$'), ':.*$', '', ''), 16) + l:disp.cols
-      let l:ln = printf('%08x', l:hpos) . ': ' . l:mid . '  .'
-      call append(line('$'), l:ln)
+      let l1 = getline(1)
+      let mid = '00' . substitute(l1, '^.*: \(.\{-}\)  .*$', '\=repeat(" ", len(submatch(1)))', '')[2:]
+      let hpos = str2nr(substitute(getline('$'), ':.*$', '', ''), 16) + disp.cols
+      let ln = printf('%08x', hpos) . ': ' . mid . '  .'
+      call append(line('$'), ln)
       call <SID>set_ht_end_pos()
     endif
   endfor

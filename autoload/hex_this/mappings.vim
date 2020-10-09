@@ -11,20 +11,20 @@ function! s:none_mappings(lst, mode)
 endfunction
 
 function! s:func_mapping(mode, key, func, ...)
-  let l:args = ''
+  let args = ''
   if exists('a:000')
-    let l:args = join(a:000, ', ')
+    let args = join(a:000, ', ')
   endif
   exec a:mode . 'noremap <silent><buffer> ' . a:key . ' :call '
-        \ . a:func . '(' . l:args . ')<CR>'
+        \ . a:func . '(' . args . ')<CR>'
 endfunction
 
 function! s:seq_mapping(mode, key, ...)
-  let l:args = ''
+  let args = ''
   if exists('a:000')
-    let l:args = join(a:000, ' | ')
+    let args = join(a:000, ' | ')
   endif
-  exec a:mode . 'noremap <silent><buffer> ' . a:key . ' ' . l:args . '<CR>'
+  exec a:mode . 'noremap <silent><buffer> ' . a:key . ' ' . args . '<CR>'
 endfunction
 
 function! s:key_mapping(mode, key_from, key_to)
