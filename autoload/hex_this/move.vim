@@ -4,6 +4,13 @@ let s:jk = { 'j': 1, 'k': -1 }
 let s:chunk = { 'W': 1, 'e': 1, 'E': 1,
       \ 'B': -1, 'ge': -1, 'gE': -1 }
 
+function! s:or_zero(n)
+  if a:n >= 0
+    return a:n
+  endif
+  return 0
+endfunction
+
 """"""" Util functions
 
 function! hex_this#move#align_hl_groups()
@@ -18,7 +25,7 @@ function! hex_this#move#align_hl_groups()
 				\ 'ascii_off': x + b:ht_move.ascii_start,
 				\ 'hex_off': b:ht_move.hex_start + (x * 2) + (x / b:ht_disp.bytes)}
 
-	let hex_patt = '\%' . line('.') . 'l\%>' . (b:byte_inf.hex_off - 1) 
+	let hex_patt = '\%' . line('.') . 'l\%>' . s:or_zero(b:byte_inf.hex_off - 1)
 				\ . 'c\%<' . (b:byte_inf.hex_off + 2) . 'c'
 	let ascii_patt = '\%' . line('.') . 'l\%' . b:byte_inf.ascii_off . 'c'
 

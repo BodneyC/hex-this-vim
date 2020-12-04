@@ -3,6 +3,13 @@ let s:standard_size = '4294967280'
 let s:pos_width = 11
 let s:macunix = has('mac') || has('macunix')
 
+function! s:or_zero(n)
+  if a:n >= 0
+    return a:n
+  endif
+  return 0
+endfunction
+
 function! s:verify_asides()
   " XXD
   if g:hex_this_xxd_path == '' && executable('xxd')
@@ -137,7 +144,7 @@ function! hex_this#continue() abort
         \ + (b:ht_disp.cols / b:ht_disp.bytes)
         \ + ((b:ht_disp.cols % b:ht_disp.bytes) ? 1 : 0)
         \ + 1
-  let b:ht_move.hex_end = b:ht_move.ascii_start - 3
+  let b:ht_move.hex_end = s:or_zero(b:ht_move.ascii_start - 3)
   let b:ht_move.space_arr = <SID>calculate_space_arr()
 
   call hex_this#move#inbound()
@@ -145,6 +152,8 @@ function! hex_this#continue() abort
   call <SID>set_ht_end_pos()
 
   call hex_this#mappings#set_mappings()
+
+  autocmd! BufLeave <buffer> call clearmatches()
 endfunction
 
 function! hex_this#init(...) abort " cols, bytes, upper
@@ -173,7 +182,7 @@ function! hex_this#init(...) abort " cols, bytes, upper
         \ + (b:ht_disp.cols / b:ht_disp.bytes)
         \ + ((b:ht_disp.cols % b:ht_disp.bytes) ? 1 : 0)
         \ + 1
-  let b:ht_move.hex_end = b:ht_move.ascii_start - 3
+  let b:ht_move.hex_end = s:or_zero(b:ht_move.ascii_start - 3)
   let b:ht_move.space_arr = <SID>calculate_space_arr()
 
   let b:ht_init_pos = [bufnr(), 1, b:ht_move.hex_start, 0]

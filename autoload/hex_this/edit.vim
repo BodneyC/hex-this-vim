@@ -11,7 +11,7 @@ endfunction
 
 function! s:byte_under_cursor()
   let ho = b:byte_inf.hex_off
-  return getline('.')[ho - 1:ho]
+  return getline('.')[ho - 1 : ho]
 endfunction
 
 """""""" Converters
